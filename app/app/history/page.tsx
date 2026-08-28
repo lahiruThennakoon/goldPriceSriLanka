@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { HistoryChart } from "@/components/history-chart";
 import { formatLkr } from "@/lib/gold-math";
-import { getHistory, type HistorySnapshot } from "@/lib/storage";
+import { getHistory, getDefaultHistoryPurity, type HistorySnapshot } from "@/lib/storage";
 import { useStoreRefresh } from "@/lib/use-store-refresh";
 
 const RANGES = [
@@ -17,9 +17,12 @@ const RANGES = [
 export default function HistoryPage() {
   const [history, setHistory] = useState<HistorySnapshot[]>([]);
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("1D");
-  const [purity, setPurity] = useState<"24k" | "22k">("22k");
+  const [purity, setPurity] = useState<"24k" | "22k">(() => getDefaultHistoryPurity());
 
-  const refresh = useCallback(() => setHistory(getHistory()), []);
+  const refresh = useCallback(() => {
+    setHistory(getHistory());
+    setPurity(getDefaultHistoryPurity());
+  }, []);
   useStoreRefresh(refresh);
 
   const rangeMs = RANGES.find((r) => r.key === range)!.ms;
@@ -35,7 +38,7 @@ export default function HistoryPage() {
       <h1 className="text-lg font-semibold">Price History</h1>
 
       <div className="flex gap-2">
-        {(["22k", "24k"] as const).map((p) => (
+        {(["24k", "22k"] as const).map((p) => (
           <button
             key={p}
             onClick={() => setPurity(p)}

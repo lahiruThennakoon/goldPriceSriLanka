@@ -5,6 +5,7 @@ import { useMarketData } from "@/lib/use-market-data";
 import { formatLkr, goldValueLkr } from "@/lib/gold-math";
 import {
   deleteHolding,
+  getDefaultPurityKarat,
   getHoldings,
   saveHolding,
   type Holding,
@@ -141,7 +142,7 @@ function AddHoldingForm({
   const [name, setName] = useState("");
   const [form, setForm] = useState<HoldingForm>("biscuit");
   const [weight, setWeight] = useState("8");
-  const [purity, setPurity] = useState("22");
+  const [purity, setPurity] = useState(() => String(getDefaultPurityKarat()));
 
   function handleSave() {
     const weightGrams = parseFloat(weight);

@@ -204,6 +204,15 @@ export function getSettings(): Settings {
   return readStore().settings;
 }
 
+export function getDefaultPurityKarat(): number {
+  return getSettings().defaultPurity;
+}
+
+/** Map settings purity to the nearest history chart band (22K or 24K). */
+export function getDefaultHistoryPurity(): "24k" | "22k" {
+  return getDefaultPurityKarat() >= 23 ? "24k" : "22k";
+}
+
 export function saveSettings(settings: Settings): boolean {
   const store = readStore();
   store.settings = settings;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
 import {
   formatGrams,
@@ -10,16 +10,15 @@ import {
   gramsToPavan,
   pavanToGrams,
 } from "@/lib/gold-math";
-import { getSettings } from "@/lib/storage";
+import { getDefaultPurityKarat, getSettings } from "@/lib/storage";
 
 const PURITY_OPTIONS = [24, 22, 21, 18, 14] as const;
 
 export default function CalculatorPage() {
   const { response, loading } = useMarketData();
-  const settings = useMemo(() => getSettings(), []);
-  const [unit, setUnit] = useState<"grams" | "pavan">(settings.defaultWeightUnit);
+  const [unit, setUnit] = useState<"grams" | "pavan">(() => getSettings().defaultWeightUnit);
   const [weightInput, setWeightInput] = useState("8");
-  const [purity, setPurity] = useState<number>(settings.defaultPurity);
+  const [purity, setPurity] = useState<number>(() => getDefaultPurityKarat());
   const [customPurity, setCustomPurity] = useState("");
   const [isCustom, setIsCustom] = useState(false);
 
