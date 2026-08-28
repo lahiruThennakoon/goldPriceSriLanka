@@ -72,7 +72,7 @@ export default function HistoryPage() {
           </p>
         )}
         {filtered.length >= 2 ? (
-          <HistoryChart points={filtered} />
+          <HistoryChart points={filtered} purity={purity} />
         ) : (
           <p className="py-8 text-center text-sm" style={{ color: "var(--ink-secondary)" }}>
             Building your price history for this range — check back as data accumulates. This

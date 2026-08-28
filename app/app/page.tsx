@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
 import { PriceHero } from "@/components/price-hero";
 import { VerificationBanner } from "@/components/verification-banner";
-import { formatLkr, goldValueLkr, lkrPerGramAtPurity } from "@/lib/gold-math";
+import { formatLkr, goldValueLkr, lkrPerGramAtPurity, scalePavanPriceToPurity } from "@/lib/gold-math";
 import { getHoldings, getSettings, type Holding } from "@/lib/storage";
 
 export default function HomePage() {
@@ -37,16 +37,17 @@ export default function HomePage() {
   }
 
   const { data, status } = response;
-  // The Verification Banner always compares at 22K -- that's the basis the
-  // reference price (FR5/FR6) is computed against, independent of whichever
-  // purity the user has chosen as their display default below.
-  const lkrPerGram22k = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, 22);
-  const lkrPerPavan22k = lkrPerGram22k * 8;
-
-  const lkrPerGram24k = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, 24);
+  // Reference data is sourced at 22K; scale both sides to the user's display purity.
+  const REFERENCE_KARAT = 22;
 
   const lkrPerGramDefault = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, defaultPurity);
   const lkrPerPavanDefault = lkrPerGramDefault * 8;
+
+  const referenceLkrPerPavanDefault = scalePavanPriceToPurity(
+    data.referenceLkrPerPavan22k,
+    REFERENCE_KARAT,
+    defaultPurity
+  );
 
   const portfolioTotal = holdings.reduce(
     (sum, h) => sum + goldValueLkr(data.goldUsdPerTroyOunce, data.usdLkrRate, h.purityKarat, h.weightGrams),
@@ -64,8 +65,9 @@ export default function HomePage() {
       />
 
       <VerificationBanner
-        calculatedLkrPerPavan22k={lkrPerPavan22k}
-        referenceLkrPerPavan22k={data.referenceLkrPerPavan22k}
+        purity={defaultPurity}
+        calculatedLkrPerPavan={lkrPerPavanDefault}
+        referenceLkrPerPavan={referenceLkrPerPavanDefault}
         referenceIsSample={data.referenceIsSample}
       />
 
@@ -83,8 +85,8 @@ export default function HomePage() {
             <dd>{data.usdLkrRate.toFixed(2)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt>24K per gram</dt>
-            <dd>{formatLkr(lkrPerGram24k)}</dd>
+            <dt>{defaultPurity}K per gram</dt>
+            <dd>{formatLkr(lkrPerGramDefault)}</dd>
           </div>
         </dl>
       </div>

@@ -37,6 +37,15 @@ export function pavanToGrams(pavan: number): number {
   return pavan * GRAMS_PER_PAVAN;
 }
 
+/** Scale a per-pavan price from one karat basis to another (linear purity ratio). */
+export function scalePavanPriceToPurity(
+  lkrPerPavan: number,
+  fromKarat: number,
+  toKarat: number
+): number {
+  return lkrPerPavan * (toKarat / fromKarat);
+}
+
 // Round only for display -- never feed this back into a calculation.
 export function formatLkr(value: number): string {
   return new Intl.NumberFormat("en-LK", {
