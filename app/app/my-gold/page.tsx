@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
 import { formatLkr, goldValueLkr } from "@/lib/gold-math";
 import {
@@ -10,6 +10,7 @@ import {
   type Holding,
   type HoldingForm,
 } from "@/lib/storage";
+import { useStoreRefresh } from "@/lib/use-store-refresh";
 
 const FORM_LABELS: Record<HoldingForm, string> = {
   biscuit: "Biscuit / Bar",
@@ -22,14 +23,10 @@ export default function MyGoldPage() {
   const { response, loading } = useMarketData();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [showAdd, setShowAdd] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setHoldings(getHoldings());
-  }, []);
-
-  function refresh() {
-    setHoldings(getHoldings());
-  }
+  const refresh = useCallback(() => setHoldings(getHoldings()), []);
+  useStoreRefresh(refresh);
 
   function handleDelete(id: string) {
     deleteHolding(id);
@@ -104,9 +101,14 @@ export default function MyGoldPage() {
         <AddHoldingForm
           onSaved={() => {
             refresh();
+            setSaveError(null);
             setShowAdd(false);
           }}
-          onCancel={() => setShowAdd(false)}
+          onError={(message) => setSaveError(message)}
+          onCancel={() => {
+            setSaveError(null);
+            setShowAdd(false);
+          }}
         />
       ) : (
         <button
@@ -117,11 +119,25 @@ export default function MyGoldPage() {
           + Add gold item
         </button>
       )}
+
+      {saveError && (
+        <p className="text-sm" style={{ color: "var(--negative)" }}>
+          {saveError}
+        </p>
+      )}
     </main>
   );
 }
 
-function AddHoldingForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: () => void }) {
+function AddHoldingForm({
+  onSaved,
+  onError,
+  onCancel,
+}: {
+  onSaved: () => void;
+  onError: (message: string) => void;
+  onCancel: () => void;
+}) {
   const [name, setName] = useState("");
   const [form, setForm] = useState<HoldingForm>("biscuit");
   const [weight, setWeight] = useState("8");
@@ -131,7 +147,7 @@ function AddHoldingForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: 
     const weightGrams = parseFloat(weight);
     const purityKarat = parseFloat(purity);
     if (!name || !(weightGrams > 0) || !(purityKarat > 0)) return;
-    saveHolding({
+    const saved = saveHolding({
       id: crypto.randomUUID(),
       name,
       form,
@@ -139,6 +155,10 @@ function AddHoldingForm({ onSaved, onCancel }: { onSaved: () => void; onCancel: 
       purityKarat,
       createdAt: new Date().toISOString(),
     });
+    if (!saved) {
+      onError("Could not save this item — browser storage may be blocked or full.");
+      return;
+    }
     onSaved();
   }
 

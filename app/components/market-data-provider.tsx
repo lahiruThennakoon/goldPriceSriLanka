@@ -46,7 +46,7 @@ function maybeCaptureHistory(json: MarketDataResponse) {
   const lkrPerGram24k = lkrPerGramAtPurity(json.data.goldUsdPerTroyOunce, json.data.usdLkrRate, 24);
   const lkrPerGram22k = lkrPerGramAtPurity(json.data.goldUsdPerTroyOunce, json.data.usdLkrRate, 22);
   appendHistorySnapshot({
-    timestamp: json.data.fetchedAt,
+    timestamp: new Date().toISOString(),
     lkrPerPavan24k: lkrPerGram24k * GRAMS_PER_PAVAN,
     lkrPerPavan22k: lkrPerGram22k * GRAMS_PER_PAVAN,
   });
@@ -69,8 +69,10 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
         maybeCaptureHistory(json);
       } catch {
         if (cancelled) return;
-        setResponse(loadOfflineFallback());
+        const fallback = loadOfflineFallback();
+        setResponse(fallback);
         setLoading(false);
+        maybeCaptureHistory(fallback);
       }
     }
 

@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { MarketDataProvider } from "@/components/market-data-provider";
+import { StorageBootstrap } from "@/components/storage-bootstrap";
 import { SwRegister } from "@/components/sw-register";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
@@ -35,11 +36,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full pb-16">
-        <MarketDataProvider>
-          <SwRegister />
-          {children}
-          <BottomNav />
-        </MarketDataProvider>
+        <StorageBootstrap>
+          <MarketDataProvider>
+            <SwRegister />
+            {children}
+            <BottomNav />
+          </MarketDataProvider>
+        </StorageBootstrap>
       </body>
     </html>
   );

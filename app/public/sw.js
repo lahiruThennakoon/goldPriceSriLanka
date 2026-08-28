@@ -1,4 +1,4 @@
-const CACHE_NAME = "goldpwa-shell-v1";
+const CACHE_NAME = "goldpwa-shell-v2";
 const SHELL_URLS = ["/", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", (event) => {

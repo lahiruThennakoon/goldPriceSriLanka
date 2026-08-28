@@ -1,22 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
 import { PriceHero } from "@/components/price-hero";
 import { VerificationBanner } from "@/components/verification-banner";
 import { formatLkr, goldValueLkr, lkrPerGramAtPurity, scalePavanPriceToPurity } from "@/lib/gold-math";
 import { getHoldings, getSettings, type Holding } from "@/lib/storage";
+import { useStoreRefresh } from "@/lib/use-store-refresh";
 
 export default function HomePage() {
   const { response, loading } = useMarketData();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [defaultPurity, setDefaultPurity] = useState(24);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setHoldings(getHoldings());
     setDefaultPurity(getSettings().defaultPurity);
   }, []);
+  useStoreRefresh(refresh);
 
   if (loading) {
     return (

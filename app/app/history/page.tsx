@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { HistoryChart } from "@/components/history-chart";
 import { formatLkr } from "@/lib/gold-math";
-import { getHistory, subscribeHistoryUpdates, type HistorySnapshot } from "@/lib/storage";
+import { getHistory, type HistorySnapshot } from "@/lib/storage";
+import { useStoreRefresh } from "@/lib/use-store-refresh";
 
 const RANGES = [
   { key: "1D", ms: 24 * 60 * 60 * 1000 },
@@ -18,25 +19,13 @@ export default function HistoryPage() {
   const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("1D");
   const [purity, setPurity] = useState<"24k" | "22k">("22k");
 
-  useEffect(() => {
-    const refresh = () => setHistory(getHistory());
-    refresh();
-
-    const unsubscribe = subscribeHistoryUpdates(refresh);
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") refresh();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-
-    return () => {
-      unsubscribe();
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, []);
+  const refresh = useCallback(() => setHistory(getHistory()), []);
+  useStoreRefresh(refresh);
 
   const rangeMs = RANGES.find((r) => r.key === range)!.ms;
   const cutoff = Date.now() - rangeMs;
   const filtered = history.filter((h) => new Date(h.timestamp).getTime() >= cutoff);
+  const totalSnapshots = history.length;
 
   const latest = filtered[filtered.length - 1];
   const value = latest ? (purity === "22k" ? latest.lkrPerPavan22k : latest.lkrPerPavan24k) : null;
@@ -83,13 +72,20 @@ export default function HistoryPage() {
             {formatLkr(value)}
           </p>
         )}
-        {filtered.length >= 2 ? (
-          <HistoryChart points={filtered} purity={purity} />
+        {filtered.length >= 1 ? (
+          <>
+            {filtered.length === 1 && (
+              <p className="mb-3 text-xs" style={{ color: "var(--ink-secondary)" }}>
+                1 reading saved — reopen the app later to build the trend line.
+              </p>
+            )}
+            <HistoryChart points={filtered} purity={purity} />
+          </>
         ) : (
           <p className="py-8 text-center text-sm" style={{ color: "var(--ink-secondary)" }}>
-            Building your price history for this range — check back as data accumulates. This
-            app doesn&apos;t backfill history from before you started using it, so shorter ranges
-            (1D, 1W) fill in first.
+            {totalSnapshots > 0
+              ? "No readings in this time range yet. Try a longer range above."
+              : "Price readings are saved each time you open the app. Visit Home once, then check back after your next visit."}
           </p>
         )}
       </div>

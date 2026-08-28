@@ -55,8 +55,18 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
+  const chartPoints = useMemo(() => {
+    if (points.length !== 1) return points;
+    const only = points[0];
+    const midpoint = new Date(only.timestamp).getTime();
+    return [
+      { ...only, timestamp: new Date(midpoint - 30 * 60_000).toISOString() },
+      only,
+    ];
+  }, [points]);
+
   const chart = useMemo(() => {
-    const values = points.map((p) => getValue(p, purity));
+    const values = chartPoints.map((p) => getValue(p, purity));
     const min = Math.min(...values);
     const max = Math.max(...values);
     const padding = (max - min) * 0.08 || max * 0.01;
@@ -73,8 +83,8 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
     const plotW = width - padLeft - padRight;
     const plotH = height - padTop - padBottom;
 
-    const coords = points.map((p, i) => ({
-      x: padLeft + (i / (points.length - 1)) * plotW,
+    const coords = chartPoints.map((p, i) => ({
+      x: padLeft + (i / (chartPoints.length - 1)) * plotW,
       y: padTop + (1 - (getValue(p, purity) - yMin) / yRange) * plotH,
       value: getValue(p, purity),
       timestamp: p.timestamp,
@@ -92,8 +102,8 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
     });
 
     const spanMs =
-      new Date(points[points.length - 1].timestamp).getTime() -
-      new Date(points[0].timestamp).getTime();
+      new Date(chartPoints[chartPoints.length - 1].timestamp).getTime() -
+      new Date(chartPoints[0].timestamp).getTime();
 
     const first = values[0];
     const last = values[values.length - 1];
@@ -117,7 +127,7 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
       trendUp,
       last,
     };
-  }, [points, purity]);
+  }, [chartPoints, purity]);
 
   const handlePointer = useCallback(
     (clientX: number) => {
@@ -142,7 +152,7 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
     [chart.coords, chart.width],
   );
 
-  if (points.length < 2) return null;
+  if (points.length < 1) return null;
 
   const active = activeIndex !== null ? chart.coords[activeIndex] : null;
   const strokeColor = chart.trendUp ? "var(--positive)" : "var(--negative)";
@@ -270,7 +280,7 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
           fontSize={10}
           fill="var(--ink-secondary)"
         >
-          {formatChartDate(points[0].timestamp, chart.spanMs)}
+          {formatChartDate(chartPoints[0].timestamp, chart.spanMs)}
         </text>
         <text
           x={chart.width - 12}
@@ -279,7 +289,7 @@ export function HistoryChart({ points, purity }: { points: HistorySnapshot[]; pu
           fontSize={10}
           fill="var(--ink-secondary)"
         >
-          {formatChartDate(points[points.length - 1].timestamp, chart.spanMs)}
+          {formatChartDate(chartPoints[chartPoints.length - 1].timestamp, chart.spanMs)}
         </text>
       </svg>
     </div>
