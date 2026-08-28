@@ -95,34 +95,37 @@ function readStore(): StoreShape {
   }
 }
 
+function mergeHoldings(a: Holding[], b: Holding[]): Holding[] {
+  const map = new Map<string, Holding>();
+  for (const holding of a) map.set(holding.id, holding);
+  for (const holding of b) map.set(holding.id, holding);
+  return Array.from(map.values()).sort((x, y) => x.createdAt.localeCompare(y.createdAt));
+}
+
+function mergeHistory(a: HistorySnapshot[], b: HistorySnapshot[]): HistorySnapshot[] {
+  const map = new Map<string, HistorySnapshot>();
+  for (const snapshot of a) map.set(snapshot.timestamp, snapshot);
+  for (const snapshot of b) map.set(snapshot.timestamp, snapshot);
+  return Array.from(map.values())
+    .sort((x, y) => new Date(x.timestamp).getTime() - new Date(y.timestamp).getTime())
+    .slice(-HISTORY_CAP);
+}
+
+function mergeStores(primary: StoreShape, secondary: StoreShape): StoreShape {
+  return {
+    holdings: mergeHoldings(primary.holdings, secondary.holdings),
+    settings: { ...DEFAULT_SETTINGS, ...primary.settings, ...secondary.settings },
+    history: mergeHistory(primary.history, secondary.history),
+  };
+}
+
+function storeScore(store: StoreShape): number {
+  return store.holdings.length * 1000 + store.history.length;
+}
+
 function notifyStoreUpdated() {
   if (!isBrowser()) return;
   window.dispatchEvent(new CustomEvent(STORE_UPDATED_EVENT));
-}
-
-function mirrorToIndexedDb(payload: string) {
-  if (!isBrowser() || !("indexedDB" in window)) return;
-  void openDb()
-    .then((db) => idbPut(db, ROOT_KEY, payload))
-    .catch(() => {
-      // Non-fatal backup path.
-    });
-}
-
-function writeStore(store: StoreShape): boolean {
-  if (!isBrowser()) return false;
-  try {
-    const payload = JSON.stringify(store);
-    window.localStorage.setItem(ROOT_KEY, payload);
-    if (window.localStorage.getItem(ROOT_KEY) !== payload) {
-      return false;
-    }
-    mirrorToIndexedDb(payload);
-    notifyStoreUpdated();
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -154,21 +157,96 @@ function idbPut(db: IDBDatabase, key: string, value: string): Promise<void> {
   });
 }
 
-export async function hydrateStoreFromBackup(): Promise<boolean> {
-  if (!isBrowser()) return false;
-  if (window.localStorage.getItem(ROOT_KEY)) return false;
-  if (!("indexedDB" in window)) return false;
-
+async function mirrorToIndexedDb(payload: string): Promise<void> {
+  if (!isBrowser() || !("indexedDB" in window)) return;
   try {
     const db = await openDb();
-    const backup = await idbGet(db, ROOT_KEY);
-    if (!backup || !parseStore(backup)) return false;
-    window.localStorage.setItem(ROOT_KEY, backup);
+    await idbPut(db, ROOT_KEY, payload);
+  } catch {
+    // Non-fatal backup path.
+  }
+}
+
+function writeStore(store: StoreShape, options?: { mergeHoldings?: boolean; awaitBackup?: boolean }): boolean {
+  if (!isBrowser()) return false;
+
+  let next = store;
+  if (options?.mergeHoldings) {
+    const live = readStore();
+    next = {
+      ...store,
+      holdings: mergeHoldings(live.holdings, store.holdings),
+      history: mergeHistory(live.history, store.history),
+    };
+  }
+
+  try {
+    const payload = JSON.stringify(next);
+    window.localStorage.setItem(ROOT_KEY, payload);
+    if (window.localStorage.getItem(ROOT_KEY) !== payload) {
+      return false;
+    }
+    if (options?.awaitBackup) {
+      void mirrorToIndexedDb(payload);
+    } else {
+      void mirrorToIndexedDb(payload);
+    }
     notifyStoreUpdated();
     return true;
   } catch {
     return false;
   }
+}
+
+async function readIndexedDbStore(): Promise<StoreShape | null> {
+  if (!isBrowser() || !("indexedDB" in window)) return null;
+  try {
+    const db = await openDb();
+    const backup = await idbGet(db, ROOT_KEY);
+    if (!backup) return null;
+    return parseStore(backup);
+  } catch {
+    return null;
+  }
+}
+
+/** Merge localStorage with IndexedDB on startup so holdings survive tab races and storage eviction. */
+export async function hydrateStoreFromBackup(): Promise<boolean> {
+  if (!isBrowser()) return false;
+
+  const localRaw = window.localStorage.getItem(ROOT_KEY);
+  const local = localRaw ? parseStore(localRaw) : null;
+  const idb = await readIndexedDbStore();
+
+  if (!local && !idb) return false;
+
+  if (!local && idb) {
+    window.localStorage.setItem(ROOT_KEY, JSON.stringify(idb));
+    notifyStoreUpdated();
+    await mirrorToIndexedDb(JSON.stringify(idb));
+    return true;
+  }
+
+  if (local && !idb) {
+    await mirrorToIndexedDb(JSON.stringify(local));
+    return false;
+  }
+
+  const merged = mergeStores(local!, idb!);
+  const mergedPayload = JSON.stringify(merged);
+  const needsSync =
+    storeScore(merged) > storeScore(local!) ||
+    merged.holdings.length > local!.holdings.length ||
+    mergedPayload !== localRaw;
+
+  if (needsSync) {
+    window.localStorage.setItem(ROOT_KEY, mergedPayload);
+    notifyStoreUpdated();
+    await mirrorToIndexedDb(mergedPayload);
+    return true;
+  }
+
+  return false;
 }
 
 export async function requestPersistentStorage(): Promise<void> {
@@ -191,13 +269,13 @@ export function saveHolding(holding: Holding): boolean {
   const idx = store.holdings.findIndex((h) => h.id === holding.id);
   if (idx >= 0) store.holdings[idx] = holding;
   else store.holdings.push(holding);
-  return writeStore(store);
+  return writeStore(store, { awaitBackup: true });
 }
 
 export function deleteHolding(id: string): boolean {
   const store = readStore();
   store.holdings = store.holdings.filter((h) => h.id !== id);
-  return writeStore(store);
+  return writeStore(store, { awaitBackup: true });
 }
 
 export function getSettings(): Settings {
@@ -216,7 +294,7 @@ export function getDefaultHistoryPurity(): "24k" | "22k" {
 export function saveSettings(settings: Settings): boolean {
   const store = readStore();
   store.settings = settings;
-  return writeStore(store);
+  return writeStore(store, { mergeHoldings: true });
 }
 
 export function getHistory(): HistorySnapshot[] {
@@ -242,7 +320,7 @@ export function appendHistorySnapshot(snapshot: HistorySnapshot) {
     store.history = store.history.slice(store.history.length - HISTORY_CAP);
   }
 
-  if (writeStore(store) && isBrowser()) {
+  if (writeStore(store, { mergeHoldings: true }) && isBrowser()) {
     sessionStorage.setItem(SESSION_HISTORY_KEY, "1");
   }
 }

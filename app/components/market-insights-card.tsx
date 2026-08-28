@@ -103,7 +103,7 @@ export function MarketInsightsCard({ insights }: { insights: MarketInsights }) {
             Gold market news
           </p>
           <p className="mt-1 text-sm" style={{ color: "var(--ink-secondary)" }}>
-            High-impact headlines from the last 36 hours
+            Top gold headlines from the last 36 hours
           </p>
 
           <div className="mt-3 space-y-2">

@@ -18,7 +18,10 @@ const MarketDataContext = createContext<MarketDataContextValue>({
 });
 
 async function fetchMarketData(): Promise<MarketDataResponse> {
-  const res = await fetch("/api/market-data", { cache: "no-store" });
+  const res = await fetch(`/api/market-data?t=${Date.now()}`, {
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache" },
+  });
   return (await res.json()) as MarketDataResponse;
 }
 
@@ -65,8 +68,12 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setResponse(json);
         setLoading(false);
-        cacheMarketData(json.data);
-        maybeCaptureHistory(json);
+        if (json.status === "fresh" && json.data) {
+          cacheMarketData(json.data);
+          maybeCaptureHistory(json);
+        } else if (json.data) {
+          maybeCaptureHistory(json);
+        }
       } catch {
         if (cancelled) return;
         const fallback = loadOfflineFallback();
@@ -77,10 +84,16 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
     }
 
     load();
-    const interval = setInterval(load, 60_000);
+    const interval = setInterval(load, 30_000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") load();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       cancelled = true;
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 

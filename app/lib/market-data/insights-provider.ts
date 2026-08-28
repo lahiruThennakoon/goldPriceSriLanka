@@ -3,8 +3,18 @@ import { fetchMarketHistory } from "@/lib/market-data/historical-provider";
 import { LiveMarketDataProvider } from "@/lib/market-data/live-provider";
 
 const YAHOO_GOLD_RSS = "https://feeds.finance.yahoo.com/rss/2.0/headline?s=GC=F&region=US&lang=en-US";
-const GOOGLE_MACRO_RSS =
-  "https://news.google.com/rss/search?q=gold+price+federal+reserve+dollar+interest+rates&hl=en-US&gl=US&ceid=US:en&when=1d";
+const GOOGLE_GOLD_RSS =
+  "https://news.google.com/rss/search?q=gold+price+OR+%22gold+prices%22+OR+XAUUSD+when:1d&hl=en-US&gl=US&ceid=US:en";
+
+const GOLD_RELEVANCE_KEYWORDS = [
+  "gold",
+  "xau",
+  "bullion",
+  "precious metal",
+  "comex",
+  "gc=f",
+  "safe haven",
+];
 
 const HIGH_IMPACT_KEYWORDS = [
   "fed",
@@ -14,22 +24,25 @@ const HIGH_IMPACT_KEYWORDS = [
   "rate cut",
   "inflation",
   "cpi",
-  "war",
-  "tariff",
   "dollar",
   "treasury",
-  "jackson hole",
   "geopolit",
-  "crisis",
-  "sanction",
-  "hawkish",
-  "dovish",
-  "lkr",
-  "sri lanka",
   "central bank",
   "yield",
   "recession",
-  "safe haven",
+];
+
+const IRRELEVANT_KEYWORDS = [
+  "bitcoin",
+  "crypto",
+  "ethereum",
+  "stock market",
+  "nfl",
+  "nba",
+  "celebrity",
+  "movie",
+  "football",
+  "cricket score",
 ];
 
 export type ImpactLevel = "high" | "medium";
@@ -101,9 +114,19 @@ function parseRss(xml: string, defaultPublisher: string): Omit<MarketNewsItem, "
   return items;
 }
 
+function isGoldRelevant(title: string, summary: string): boolean {
+  const text = `${title} ${summary}`.toLowerCase();
+  if (IRRELEVANT_KEYWORDS.some((keyword) => text.includes(keyword))) return false;
+  return GOLD_RELEVANCE_KEYWORDS.some((keyword) => text.includes(keyword));
+}
+
 function scoreImpact(title: string, summary: string): ImpactLevel {
   const text = `${title} ${summary}`.toLowerCase();
-  return HIGH_IMPACT_KEYWORDS.some((keyword) => text.includes(keyword)) ? "high" : "medium";
+  const goldHit = GOLD_RELEVANCE_KEYWORDS.some((keyword) => text.includes(keyword));
+  const macroHit = HIGH_IMPACT_KEYWORDS.some((keyword) => text.includes(keyword));
+  if (goldHit && macroHit) return "high";
+  if (goldHit) return "medium";
+  return "medium";
 }
 
 function isRecentToday(iso: string): boolean {
@@ -230,10 +253,11 @@ export async function fetchMarketInsights(): Promise<MarketInsights> {
     live.fetch(),
     fetchMarketHistory("1W"),
     fetchRss(YAHOO_GOLD_RSS, "Yahoo Finance"),
-    fetchRss(GOOGLE_MACRO_RSS, "Google News"),
+    fetchRss(GOOGLE_GOLD_RSS, "Google News"),
   ]);
 
   const scored = [...yahooNews, ...googleNews]
+    .filter((item) => isGoldRelevant(item.title, item.summary))
     .map((item) => ({
       ...item,
       impact: scoreImpact(item.title, item.summary),
@@ -247,7 +271,7 @@ export async function fetchMarketInsights(): Promise<MarketInsights> {
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
     });
 
-  const news = dedupeNews(scored).slice(0, 6);
+  const news = dedupeNews(scored).slice(0, 3);
   const factors = buildFactors(
     liveData.goldUsdPerTroyOunce,
     liveData.usdLkrRate,
