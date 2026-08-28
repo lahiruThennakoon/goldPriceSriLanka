@@ -66,6 +66,10 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+html[data-install-banner="visible"] body {
+  padding-bottom: calc(4rem + 9.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }

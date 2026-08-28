@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
+import { MarketInsightsCard } from "@/components/market-insights-card";
 import { PriceHero } from "@/components/price-hero";
 import { VerificationBanner } from "@/components/verification-banner";
 import { formatLkr, goldValueLkr, lkrPerGramAtPurity, scalePavanPriceToPurity } from "@/lib/gold-math";
+import type { MarketInsights } from "@/lib/market-data/insights-provider";
+import type { MarketInsightsResponse } from "@/lib/market-data/types";
 import { getDefaultPurityKarat, getHoldings, type Holding } from "@/lib/storage";
 import { useStoreRefresh } from "@/lib/use-store-refresh";
 
@@ -13,12 +16,36 @@ export default function HomePage() {
   const { response, loading } = useMarketData();
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [defaultPurity, setDefaultPurity] = useState(() => getDefaultPurityKarat());
+  const [insights, setInsights] = useState<MarketInsights | null>(null);
+  const [insightsLoading, setInsightsLoading] = useState(true);
 
   const refresh = useCallback(() => {
     setHoldings(getHoldings());
     setDefaultPurity(getDefaultPurityKarat());
   }, []);
   useStoreRefresh(refresh);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInsights() {
+      setInsightsLoading(true);
+      try {
+        const res = await fetch("/api/market-insights", { cache: "no-store" });
+        const json = (await res.json()) as MarketInsightsResponse;
+        if (!cancelled) setInsights(json.status === "fresh" ? json.insights : null);
+      } catch {
+        if (!cancelled) setInsights(null);
+      } finally {
+        if (!cancelled) setInsightsLoading(false);
+      }
+    }
+
+    loadInsights();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -72,6 +99,12 @@ export default function HomePage() {
         referenceLkrPerPavan={referenceLkrPerPavanDefault}
         referenceIsSample={data.referenceIsSample}
       />
+
+      {insightsLoading ? (
+        <div className="h-48 animate-pulse rounded-md bg-surface-raised" />
+      ) : insights ? (
+        <MarketInsightsCard insights={insights} />
+      ) : null}
 
       <div className="rounded-md bg-surface-raised p-4 text-sm">
         <p className="mb-2 font-medium" style={{ color: "var(--ink-primary)" }}>

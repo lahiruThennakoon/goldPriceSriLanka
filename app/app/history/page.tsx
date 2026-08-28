@@ -1,8 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { HistoryChart } from "@/components/history-chart";
+import { PriceForecastCard } from "@/components/price-forecast-card";
 import { formatLkr } from "@/lib/gold-math";
+import { mergeHistorySnapshots } from "@/lib/history-merge";
+import type { MarketForecastResponse, MarketHistoryResponse } from "@/lib/market-data/types";
+import type { PriceForecast } from "@/lib/price-forecast";
 import { getHistory, getDefaultHistoryPurity, type HistorySnapshot } from "@/lib/storage";
 import { useStoreRefresh } from "@/lib/use-store-refresh";
 
@@ -14,21 +18,82 @@ const RANGES = [
   { key: "1Y", ms: 365 * 24 * 60 * 60 * 1000 },
 ] as const;
 
+type RangeKey = (typeof RANGES)[number]["key"];
+
 export default function HistoryPage() {
-  const [history, setHistory] = useState<HistorySnapshot[]>([]);
-  const [range, setRange] = useState<(typeof RANGES)[number]["key"]>("1D");
+  const [localHistory, setLocalHistory] = useState<HistorySnapshot[]>([]);
+  const [marketHistory, setMarketHistory] = useState<HistorySnapshot[]>([]);
+  const [marketStatus, setMarketStatus] = useState<MarketHistoryResponse["status"]>("fresh");
+  const [marketLoading, setMarketLoading] = useState(true);
+  const [forecast, setForecast] = useState<PriceForecast | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(true);
+  const [range, setRange] = useState<RangeKey>("1M");
   const [purity, setPurity] = useState<"24k" | "22k">(() => getDefaultHistoryPurity());
 
-  const refresh = useCallback(() => {
-    setHistory(getHistory());
+  const refreshLocal = useCallback(() => {
+    setLocalHistory(getHistory());
     setPurity(getDefaultHistoryPurity());
   }, []);
-  useStoreRefresh(refresh);
+  useStoreRefresh(refreshLocal);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMarketHistory() {
+      setMarketLoading(true);
+      try {
+        const res = await fetch(`/api/market-history?range=${range}`, { cache: "no-store" });
+        const json = (await res.json()) as MarketHistoryResponse;
+        if (cancelled) return;
+        setMarketHistory(json.points ?? []);
+        setMarketStatus(json.status);
+      } catch {
+        if (cancelled) return;
+        setMarketHistory([]);
+        setMarketStatus("unavailable");
+      } finally {
+        if (!cancelled) setMarketLoading(false);
+      }
+    }
+
+    loadMarketHistory();
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadForecast() {
+      setForecastLoading(true);
+      try {
+        const res = await fetch("/api/market-forecast", { cache: "no-store" });
+        const json = (await res.json()) as MarketForecastResponse;
+        if (cancelled) return;
+        setForecast(json.status === "fresh" ? json.forecast : null);
+      } catch {
+        if (!cancelled) setForecast(null);
+      } finally {
+        if (!cancelled) setForecastLoading(false);
+      }
+    }
+
+    loadForecast();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const rangeMs = RANGES.find((r) => r.key === range)!.ms;
   const cutoff = Date.now() - rangeMs;
+
+  const history = useMemo(
+    () => mergeHistorySnapshots(marketHistory, localHistory),
+    [marketHistory, localHistory]
+  );
+
   const filtered = history.filter((h) => new Date(h.timestamp).getTime() >= cutoff);
-  const totalSnapshots = history.length;
 
   const latest = filtered[filtered.length - 1];
   const value = latest ? (purity === "22k" ? latest.lkrPerPavan22k : latest.lkrPerPavan24k) : null;
@@ -75,23 +140,30 @@ export default function HistoryPage() {
             {formatLkr(value)}
           </p>
         )}
-        {filtered.length >= 1 ? (
+
+        {marketLoading ? (
+          <div className="h-48 animate-pulse rounded-sm bg-surface-base" />
+        ) : filtered.length >= 1 ? (
           <>
-            {filtered.length === 1 && (
-              <p className="mb-3 text-xs" style={{ color: "var(--ink-secondary)" }}>
-                1 reading saved — reopen the app later to build the trend line.
-              </p>
-            )}
+            <p className="mb-3 text-xs" style={{ color: "var(--ink-secondary)" }}>
+              {marketStatus === "fresh"
+                ? "Estimated from global gold (COMEX) and USD/LKR market data. Your on-device readings refine recent points."
+                : "Showing on-device readings only — market history is temporarily unavailable."}
+            </p>
             <HistoryChart points={filtered} purity={purity} />
           </>
         ) : (
           <p className="py-8 text-center text-sm" style={{ color: "var(--ink-secondary)" }}>
-            {totalSnapshots > 0
-              ? "No readings in this time range yet. Try a longer range above."
-              : "Price readings are saved each time you open the app. Visit Home once, then check back after your next visit."}
+            No price history available for this range right now.
           </p>
         )}
       </div>
+
+      {forecastLoading ? (
+        <div className="h-40 animate-pulse rounded-md bg-surface-raised" />
+      ) : forecast ? (
+        <PriceForecastCard forecast={forecast} purity={purity} />
+      ) : null}
     </main>
   );
 }

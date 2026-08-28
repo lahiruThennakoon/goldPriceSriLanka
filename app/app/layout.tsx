@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { MarketDataProvider } from "@/components/market-data-provider";
+import { PwaInstallBanner } from "@/components/pwa-install-banner";
 import { StorageBootstrap } from "@/components/storage-bootstrap";
 import { SwRegister } from "@/components/sw-register";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <MarketDataProvider>
             <SwRegister />
             {children}
+            <PwaInstallBanner />
             <BottomNav />
           </MarketDataProvider>
         </StorageBootstrap>
