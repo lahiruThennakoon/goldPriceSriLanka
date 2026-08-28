@@ -20,8 +20,14 @@ const MarketDataContext = createContext<MarketDataContextValue>({
 async function fetchMarketData(): Promise<MarketDataResponse> {
   const res = await fetch(`/api/market-data?t=${Date.now()}`, {
     cache: "no-store",
-    headers: { "Cache-Control": "no-cache" },
+    headers: {
+      "Cache-Control": "no-cache, no-store",
+      Pragma: "no-cache",
+    },
   });
+  if (!res.ok) {
+    throw new Error(`market-data ${res.status}`);
+  }
   return (await res.json()) as MarketDataResponse;
 }
 
@@ -84,7 +90,7 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
     }
 
     load();
-    const interval = setInterval(load, 30_000);
+    const interval = setInterval(load, 15_000);
     const onVisibility = () => {
       if (document.visibilityState === "visible") load();
     };

@@ -5,8 +5,10 @@ import type { MarketDataResponse, MarketDataResult } from "@/lib/market-data/typ
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
-// AD-1: this route is the only code allowed to call external providers.
+const STALE_MAX_AGE_MS = 10 * 60 * 1000;
+
 const live = new LiveMarketDataProvider();
 const sample = new SampleMarketDataProvider();
 
@@ -16,35 +18,37 @@ function jsonResponse(body: MarketDataResponse, status = 200) {
   return NextResponse.json(body, {
     status,
     headers: {
-      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
       Pragma: "no-cache",
+      Expires: "0",
     },
   });
+}
+
+function isFreshEnough(data: MarketDataResult): boolean {
+  const age = Date.now() - new Date(data.fetchedAt).getTime();
+  return age >= 0 && age <= STALE_MAX_AGE_MS;
 }
 
 export async function GET() {
   try {
     const data = await live.fetch();
     lastGood = data;
-    const body: MarketDataResponse = { status: "fresh", data };
-    return jsonResponse(body);
+    return jsonResponse({ status: "fresh", data });
   } catch (err) {
-    if (lastGood) {
-      const body: MarketDataResponse = { status: "stale-cache", data: lastGood };
-      return jsonResponse(body);
+    if (lastGood && isFreshEnough(lastGood)) {
+      return jsonResponse({ status: "stale-cache", data: lastGood });
     }
+
     try {
       const data = await sample.fetch();
-      const body: MarketDataResponse = { status: "sample", data };
-      return jsonResponse(body);
+      return jsonResponse({ status: "sample", data });
     } catch {
-      // AD-5: never fabricate a number here -- only path allowed to omit `data`.
-      const body: MarketDataResponse = {
+      return jsonResponse({
         status: "unavailable",
         data: null,
         reason: err instanceof Error ? err.message : "unknown error",
-      };
-      return jsonResponse(body);
+      });
     }
   }
 }
