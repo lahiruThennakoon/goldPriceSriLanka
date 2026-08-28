@@ -6,14 +6,16 @@ import { useMarketData } from "@/lib/use-market-data";
 import { PriceHero } from "@/components/price-hero";
 import { VerificationBanner } from "@/components/verification-banner";
 import { formatLkr, goldValueLkr, lkrPerGramAtPurity } from "@/lib/gold-math";
-import { getHoldings, type Holding } from "@/lib/storage";
+import { getHoldings, getSettings, type Holding } from "@/lib/storage";
 
 export default function HomePage() {
   const { response, loading } = useMarketData();
   const [holdings, setHoldings] = useState<Holding[]>([]);
+  const [defaultPurity, setDefaultPurity] = useState(24);
 
   useEffect(() => {
     setHoldings(getHoldings());
+    setDefaultPurity(getSettings().defaultPurity);
   }, []);
 
   if (loading) {
@@ -35,9 +37,16 @@ export default function HomePage() {
   }
 
   const { data, status } = response;
+  // The Verification Banner always compares at 22K -- that's the basis the
+  // reference price (FR5/FR6) is computed against, independent of whichever
+  // purity the user has chosen as their display default below.
   const lkrPerGram22k = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, 22);
-  const lkrPerGram24k = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, 24);
   const lkrPerPavan22k = lkrPerGram22k * 8;
+
+  const lkrPerGram24k = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, 24);
+
+  const lkrPerGramDefault = lkrPerGramAtPurity(data.goldUsdPerTroyOunce, data.usdLkrRate, defaultPurity);
+  const lkrPerPavanDefault = lkrPerGramDefault * 8;
 
   const portfolioTotal = holdings.reduce(
     (sum, h) => sum + goldValueLkr(data.goldUsdPerTroyOunce, data.usdLkrRate, h.purityKarat, h.weightGrams),
@@ -47,8 +56,9 @@ export default function HomePage() {
   return (
     <main className="mx-auto max-w-md space-y-4 p-4">
       <PriceHero
-        lkrPerPavan22k={lkrPerPavan22k}
-        lkrPerGram22k={lkrPerGram22k}
+        purity={defaultPurity}
+        lkrPerPavan={lkrPerPavanDefault}
+        lkrPerGram={lkrPerGramDefault}
         status={status}
         fetchedAt={data.fetchedAt}
       />

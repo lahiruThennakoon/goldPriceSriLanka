@@ -3,13 +3,15 @@ import { formatFreshness } from "@/lib/use-market-data";
 import type { MarketDataStatus } from "@/lib/market-data/types";
 
 export function PriceHero({
-  lkrPerPavan22k,
-  lkrPerGram22k,
+  purity,
+  lkrPerPavan,
+  lkrPerGram,
   status,
   fetchedAt,
 }: {
-  lkrPerPavan22k: number;
-  lkrPerGram22k: number;
+  purity: number;
+  lkrPerPavan: number;
+  lkrPerGram: number;
   status: MarketDataStatus;
   fetchedAt: string;
 }) {
@@ -18,13 +20,13 @@ export function PriceHero({
   return (
     <div className="rounded-md bg-surface-raised p-5">
       <p className="text-xs" style={{ color: "var(--ink-secondary)" }}>
-        22K Gold &middot; per Pavan (8g)
+        {purity}K Gold &middot; per Pavan (8g)
       </p>
       <p className="tabular-nums mt-1 text-4xl font-semibold" style={{ color: "var(--accent-gold)" }}>
-        {formatLkr(lkrPerPavan22k)}
+        {formatLkr(lkrPerPavan)}
       </p>
       <p className="tabular-nums mt-1 text-sm" style={{ color: "var(--ink-secondary)" }}>
-        {formatLkr(lkrPerGram22k)} / gram
+        {formatLkr(lkrPerGram)} / gram
       </p>
       <p className="mt-3 text-xs" style={{ color: stale ? "var(--verify-amber)" : "var(--ink-secondary)" }}>
         {status === "unavailable"

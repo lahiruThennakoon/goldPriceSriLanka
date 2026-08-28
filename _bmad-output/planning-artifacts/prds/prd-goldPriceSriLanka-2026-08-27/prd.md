@@ -31,7 +31,7 @@ A mobile-first, installable PWA that lets Sri Lankan gold **investors** see the 
 - **FR1.** The app fetches a live gold spot price (USD per troy ounce) and a USD/LKR exchange rate, and derives LKR-per-gram and LKR-per-Pavan (8g) values at 24K.
 - **FR2.** The user enters a weight (grams or Pavan) and selects a purity (24K/22K/21K/18K/14K/Custom 1–24), and sees the resulting estimated gold value in LKR instantly, with no separate submit step.
 - **FR3.** The result view shows: entered weight, weight restated in grams, equivalent Pavan, selected purity, and the LKR value.
-- **FR4.** A home dashboard surfaces the 22K price per Pavan and per gram as the primary figures (Pavan is the primary Sri Lankan reference unit), plus the raw spot price, exchange rate, and last-updated time.
+- **FR4.** A home dashboard surfaces the price per Pavan and per gram, at the user's default purity (Settings, FR19; defaults to 24K), as the primary figures (Pavan is the primary Sri Lankan reference unit), plus the raw spot price, exchange rate, and last-updated time.
 
 ### Trust & Verification
 

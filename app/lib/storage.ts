@@ -44,7 +44,7 @@ interface StoreShape {
 }
 
 const DEFAULT_SETTINGS: Settings = {
-  defaultPurity: 22,
+  defaultPurity: 24,
   defaultWeightUnit: "grams",
   theme: "system",
   refreshIntervalMinutes: 15,
