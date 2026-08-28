@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { HistoryChart } from "@/components/history-chart";
 import { formatLkr } from "@/lib/gold-math";
-import { getHistory, type HistorySnapshot } from "@/lib/storage";
+import { getHistory, subscribeHistoryUpdates, type HistorySnapshot } from "@/lib/storage";
 
 const RANGES = [
   { key: "1D", ms: 24 * 60 * 60 * 1000 },
@@ -19,7 +19,19 @@ export default function HistoryPage() {
   const [purity, setPurity] = useState<"24k" | "22k">("22k");
 
   useEffect(() => {
-    setHistory(getHistory());
+    const refresh = () => setHistory(getHistory());
+    refresh();
+
+    const unsubscribe = subscribeHistoryUpdates(refresh);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      unsubscribe();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 
   const rangeMs = RANGES.find((r) => r.key === range)!.ms;

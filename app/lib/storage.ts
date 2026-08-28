@@ -60,6 +60,7 @@ const DEFAULT_STORE: StoreShape = {
 };
 
 const HISTORY_CAP = 400; // ring-buffer cap, AD-4
+const HISTORY_UPDATED_EVENT = "goldpwa:history-updated";
 
 function isBrowser() {
   return typeof window !== "undefined";
@@ -118,13 +119,42 @@ export function getHistory(): HistorySnapshot[] {
   return readStore().history;
 }
 
+export function getLastHistorySnapshot(): HistorySnapshot | undefined {
+  const history = readStore().history;
+  return history[history.length - 1];
+}
+
 export function appendHistorySnapshot(snapshot: HistorySnapshot) {
   const store = readStore();
+  const last = store.history[store.history.length - 1];
+
+  if (last?.timestamp === snapshot.timestamp) return;
+  if (last && !shouldCaptureSnapshot(last.timestamp, store.settings.refreshIntervalMinutes)) {
+    return;
+  }
+
   store.history.push(snapshot);
   if (store.history.length > HISTORY_CAP) {
     store.history = store.history.slice(store.history.length - HISTORY_CAP);
   }
   writeStore(store);
+  if (isBrowser()) {
+    window.dispatchEvent(new CustomEvent(HISTORY_UPDATED_EVENT));
+  }
+}
+
+export function subscribeHistoryUpdates(callback: () => void): () => void {
+  if (!isBrowser()) return () => {};
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === ROOT_KEY) callback();
+  };
+  const onCustom = () => callback();
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(HISTORY_UPDATED_EVENT, onCustom);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(HISTORY_UPDATED_EVENT, onCustom);
+  };
 }
 
 export function shouldCaptureSnapshot(lastSnapshotIso: string | undefined, refreshIntervalMinutes: number): boolean {
