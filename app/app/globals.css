@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  --surface-base: #121212;
+  --surface-raised: #1c1c1f;
+  --ink-primary: #f5f3ef;
+  --ink-secondary: #9a968d;
+  --ink-disabled: #5c594f;
+  --accent-gold: #e6c55c;
+  --positive: #5fbf8f;
+  --negative: #e2685f;
+  --verify-amber: #e3a83b;
+  --border-hairline: #2a2a2e;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --surface-base: #faf9f6;
+    --surface-raised: #ffffff;
+    --ink-primary: #1a1a1a;
+    --ink-secondary: #6b6660;
+    --ink-disabled: #b5afa5;
+    --accent-gold: #a6791e;
+    --positive: #2f8f5b;
+    --negative: #c4453c;
+    --verify-amber: #b8862a;
+    --border-hairline: #e8e4dd;
+  }
+}
+
+:root[data-theme="light"] {
+  --surface-base: #faf9f6;
+  --surface-raised: #ffffff;
+  --ink-primary: #1a1a1a;
+  --ink-secondary: #6b6660;
+  --ink-disabled: #b5afa5;
+  --accent-gold: #a6791e;
+  --positive: #2f8f5b;
+  --negative: #c4453c;
+  --verify-amber: #b8862a;
+  --border-hairline: #e8e4dd;
+}
+
+@theme inline {
+  --color-surface-base: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-disabled: var(--ink-disabled);
+  --color-accent-gold: var(--accent-gold);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-verify-amber: var(--verify-amber);
+  --color-border-hairline: var(--border-hairline);
+  --font-sans: var(--font-geist-sans);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--surface-base);
+  color: var(--ink-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
