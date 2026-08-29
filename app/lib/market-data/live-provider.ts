@@ -34,7 +34,7 @@ function buildResult(goldUsdPerTroyOunce: number, usdLkrRate: number, fetchedAt:
     goldUsdPerTroyOunce,
     usdLkrRate,
     referenceLkrPerPavan22k,
-    referenceIsSample: true,
+    referenceIsSample: false,
     fetchedAt,
   };
 }
