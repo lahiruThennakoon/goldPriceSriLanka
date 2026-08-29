@@ -25,6 +25,7 @@ export default function MyGoldPage() {
   const [holdings, setHoldings] = useState<Holding[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Holding | null>(null);
 
   const refresh = useCallback(() => setHoldings(getHoldings()), []);
   useStoreRefresh(refresh);
@@ -32,6 +33,11 @@ export default function MyGoldPage() {
   function handleDelete(id: string) {
     deleteHolding(id);
     refresh();
+  }
+
+  function handleEdit(holding: Holding) {
+    setEditing(holding);
+    setShowAdd(true);
   }
 
   const stale = response && (response.status === "stale-cache" || response.status === "sample");
@@ -81,8 +87,16 @@ export default function MyGoldPage() {
                     {FORM_LABELS[h.form]} &middot; {h.weightGrams}g &middot; {h.purityKarat}K
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                   <p className="tabular-nums text-sm">{formatLkr(value)}</p>
+                  <button
+                    onClick={() => handleEdit(h)}
+                    className="min-h-[44px] min-w-[44px] text-sm"
+                    style={{ color: "var(--ink-secondary)" }}
+                    aria-label={`Edit ${h.name}`}
+                  >
+                    Edit
+                  </button>
                   <button
                     onClick={() => handleDelete(h.id)}
                     className="min-h-[44px] min-w-[44px] text-sm"
@@ -100,13 +114,16 @@ export default function MyGoldPage() {
 
       {showAdd ? (
         <AddHoldingForm
+          initial={editing}
           onSaved={() => {
+            setEditing(null);
             refresh();
             setSaveError(null);
             setShowAdd(false);
           }}
           onError={(message) => setSaveError(message)}
           onCancel={() => {
+            setEditing(null);
             setSaveError(null);
             setShowAdd(false);
           }}
@@ -131,30 +148,32 @@ export default function MyGoldPage() {
 }
 
 function AddHoldingForm({
+  initial,
   onSaved,
   onError,
   onCancel,
 }: {
+  initial: Holding | null;
   onSaved: () => void;
   onError: (message: string) => void;
   onCancel: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [form, setForm] = useState<HoldingForm>("biscuit");
-  const [weight, setWeight] = useState("8");
-  const [purity, setPurity] = useState(() => String(getDefaultPurityKarat()));
+  const [name, setName] = useState(() => initial?.name ?? "");
+  const [form, setForm] = useState<HoldingForm>(() => initial?.form ?? "biscuit");
+  const [weight, setWeight] = useState(() => initial?.weightGrams.toString() ?? "8");
+  const [purity, setPurity] = useState(() => initial?.purityKarat.toString() ?? String(getDefaultPurityKarat()));
 
   function handleSave() {
     const weightGrams = parseFloat(weight);
     const purityKarat = parseFloat(purity);
     if (!name || !(weightGrams > 0) || !(purityKarat > 0)) return;
     const saved = saveHolding({
-      id: crypto.randomUUID(),
+      id: initial?.id ?? crypto.randomUUID(),
       name,
       form,
       weightGrams,
       purityKarat,
-      createdAt: new Date().toISOString(),
+      createdAt: initial?.createdAt ?? new Date().toISOString(),
     });
     if (!saved) {
       onError("Could not save this item — browser storage may be blocked or full.");
@@ -165,6 +184,7 @@ function AddHoldingForm({
 
   return (
     <div className="space-y-3 rounded-md bg-surface-raised p-4">
+      <p className="text-sm font-medium">{initial ? "Edit gold item" : "Add gold item"}</p>
       <input
         placeholder="Name (e.g. Wedding coin)"
         value={name}
