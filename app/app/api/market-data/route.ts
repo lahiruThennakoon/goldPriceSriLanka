@@ -34,20 +34,27 @@ export async function GET() {
   try {
     const data = await live.fetch();
     lastGood = data;
+    console.log("[market-data] Live fetch succeeded:", data);
     return jsonResponse({ status: "fresh", data });
   } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "unknown error";
+    console.error("[market-data] Live fetch failed:", errorMessage);
+    
     if (lastGood && isFreshEnough(lastGood)) {
+      console.log("[market-data] Falling back to stale cache");
       return jsonResponse({ status: "stale-cache", data: lastGood });
     }
 
     try {
+      console.log("[market-data] Falling back to sample provider");
       const data = await sample.fetch();
       return jsonResponse({ status: "sample", data });
-    } catch {
+    } catch (sampleErr) {
+      console.error("[market-data] Both live and sample fetch failed:", errorMessage);
       return jsonResponse({
         status: "unavailable",
         data: null,
-        reason: err instanceof Error ? err.message : "unknown error",
+        reason: errorMessage,
       });
     }
   }

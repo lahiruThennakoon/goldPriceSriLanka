@@ -53,6 +53,54 @@ async function fetchFromYahoo(): Promise<MarketDataResult> {
   return buildResult(gold.price, fx.price, fetchedAt);
 }
 
+async function fetchFromAlternative(): Promise<MarketDataResult> {
+  // Alternative provider when Yahoo Finance fails
+  // Try to fetch from xaus.com - a free, real-time gold price API
+  const ALTERNATIVE_URL = "https://xaus.com/api/v1/spot?currency=USD&unit=oz";
+  
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  
+  try {
+    const res = await fetchWithTimeout(ALTERNATIVE_URL);
+    
+    if (!res.ok) {
+      throw new Error(`alternative error: status=${res.status}`);
+    }
+    
+    const data = await res.json();
+    
+    // Extract gold price from xaus.com API response
+    // The spot_usd_oz field gives us USD per troy ounce
+    const goldUsdPerTroyOunce = data.spot_usd_oz;
+    if (!goldUsdPerTroyOunce || goldUsdPerTroyOunce <= 0) {
+      throw new Error("malformed alternative payload: invalid gold price");
+    }
+    
+    // For USD/LKR rate, we can use the current rate from exchangerate.host
+    const fxUrl = "https://api.exchangerate.host/latest?base=USD&symbols=LKR";
+    const fxRes = await fetchWithTimeout(fxUrl);
+    
+    if (!fxRes.ok) {
+      throw new Error(`alternative fx error: status=${fxRes.status}`);
+    }
+    
+    const fxData = await fxRes.json();
+    const usdLkrRate = fxData.rates?.LKR;
+    if (!usdLkrRate || usdLkrRate <= 0) {
+      throw new Error("malformed alternative payload: invalid FX rate");
+    }
+    
+    const fetchedAt = new Date().toISOString();
+    return buildResult(goldUsdPerTroyOunce, usdLkrRate, fetchedAt);
+    
+  } catch (altErr) {
+    throw new Error(`Alternative API failed: ${altErr instanceof Error ? altErr.message : "unknown"}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchFromLegacyApis(): Promise<MarketDataResult> {
   const [goldRes, fxRes] = await Promise.all([
     fetchWithTimeout(GOLD_SPOT_URL),
@@ -86,14 +134,27 @@ async function fetchFromLegacyApis(): Promise<MarketDataResult> {
 export class LiveMarketDataProvider implements MarketDataProvider {
   async fetch(): Promise<MarketDataResult> {
     try {
+      console.log("[live-provider] Trying Yahoo Finance");
       return await fetchFromYahoo();
     } catch (yahooErr) {
+      const yahooMsg = yahooErr instanceof Error ? yahooErr.message : "yahoo failed";
+      console.log("[live-provider] Yahoo Finance failed:", yahooMsg);
+      
       try {
-        return await fetchFromLegacyApis();
-      } catch (legacyErr) {
-        const yahooMsg = yahooErr instanceof Error ? yahooErr.message : "yahoo failed";
-        const legacyMsg = legacyErr instanceof Error ? legacyErr.message : "legacy failed";
-        throw new Error(`${yahooMsg}; ${legacyMsg}`);
+        console.log("[live-provider] Trying Alternative API");
+        return await fetchFromAlternative();
+      } catch (altErr) {
+        const altMsg = altErr instanceof Error ? altErr.message : "alternative failed";
+        console.log("[live-provider] Alternative API failed:", altMsg);
+        
+        try {
+          console.log("[live-provider] Falling back to Legacy APIs");
+          return await fetchFromLegacyApis();
+        } catch (legacyErr) {
+          const legacyMsg = legacyErr instanceof Error ? legacyErr.message : "legacy failed";
+          console.log("[live-provider] All providers failed");
+          throw new Error(`${yahooMsg}; ${altMsg}; ${legacyMsg}`);
+        }
       }
     }
   }
