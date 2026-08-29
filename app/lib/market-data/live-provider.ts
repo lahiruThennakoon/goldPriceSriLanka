@@ -45,8 +45,10 @@ async function fetchFromYahoo(): Promise<MarketDataResult> {
     fetchYahooLatestQuote("USDLKR=X"),
   ]);
 
-  const fetchedAt =
-    new Date(gold.asOf).getTime() > new Date(fx.asOf).getTime() ? gold.asOf : fx.asOf;
+  // Use the actual fetch time so the UI always shows fresh data and the
+  // app recognizes the response as freshly fetched, even when Yahoo returns
+  // cached market data (same regularMarketPrice across polls).
+  const fetchedAt = new Date().toISOString();
 
   return buildResult(gold.price, fx.price, fetchedAt);
 }
