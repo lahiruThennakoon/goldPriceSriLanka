@@ -4,19 +4,27 @@ const LOGO_WIDTH = 1024;
 const LOGO_HEIGHT = 1024;
 
 type BrandLogoProps = {
-  /** Visible height of the full lockup artwork. */
   height?: number;
   width?: number;
+  variant?: "default" | "splash";
   className?: string;
   priority?: boolean;
 };
 
+const VARIANT_HEIGHT = {
+  default: 60,
+  splash: 200,
+} as const;
+
 export function BrandLogo({
-  height = 58,
+  height,
   width,
+  variant = "default",
   className = "",
   priority = false,
 }: BrandLogoProps) {
+  const resolvedHeight = height ?? VARIANT_HEIGHT[variant];
+
   return (
     <Image
       src="/logo.png"
@@ -25,9 +33,9 @@ export function BrandLogo({
       height={LOGO_HEIGHT}
       quality={100}
       priority={priority}
-      sizes="(max-width: 556px) 180px, 220px"
+      sizes={variant === "splash" ? "(max-width: 556px) 320px, 360px" : "(max-width: 556px) 180px, 220px"}
       className={`block h-auto max-w-full ${className}`}
-      style={width != null ? { width, height: "auto" } : { height, width: "auto" }}
+      style={width != null ? { width, height: "auto" } : { height: resolvedHeight, width: "auto" }}
     />
   );
 }

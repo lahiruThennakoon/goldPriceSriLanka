@@ -9,6 +9,8 @@ import { StorageBootstrap } from "@/components/storage-bootstrap";
 import { SwRegister } from "@/components/sw-register";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
+import { SPLASH_NAVY } from "@/lib/brand-theme";
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -19,8 +21,8 @@ export const metadata: Metadata = {
   description: "Track the current LKR value of your gold holdings.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: [{ url: "/logo.png", sizes: "1024x1024", type: "image/png" }],
+    apple: [{ url: "/logo.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: {
     capable: true,
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#121212",
+  themeColor: SPLASH_NAVY,
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

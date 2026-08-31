@@ -2,7 +2,7 @@
 
 import { BrandLogo } from "@/components/brand-logo";
 
-const SPLASH_NAVY = "#0a1528";
+import { SPLASH_NAVY } from "@/lib/brand-theme";
 
 export function AppSplash({ fading }: { fading: boolean }) {
   return (
@@ -14,11 +14,17 @@ export function AppSplash({ fading }: { fading: boolean }) {
         pointerEvents: fading ? "none" : "auto",
         paddingTop: "env(safe-area-inset-top, 0px)",
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
+        paddingLeft: "env(safe-area-inset-left, 0px)",
+        paddingRight: "env(safe-area-inset-right, 0px)",
       }}
       role="img"
       aria-label="Gold Value LK"
     >
-      <BrandLogo height={120} priority />
+      <BrandLogo
+        variant="splash"
+        priority
+        className="max-w-[min(78vw,320px)]"
+      />
     </div>
   );
 }
