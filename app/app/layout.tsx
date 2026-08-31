@@ -4,6 +4,7 @@ import "./globals.css";
 import { BottomNav } from "@/components/bottom-nav";
 import { MarketDataProvider } from "@/components/market-data-provider";
 import { PwaInstallBanner } from "@/components/pwa-install-banner";
+import { SplashGate } from "@/components/splash-gate";
 import { StorageBootstrap } from "@/components/storage-bootstrap";
 import { SwRegister } from "@/components/sw-register";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
@@ -42,14 +43,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-full">
-        <StorageBootstrap>
-          <MarketDataProvider>
-            <SwRegister />
-            {children}
-            <PwaInstallBanner />
-            <BottomNav />
-          </MarketDataProvider>
-        </StorageBootstrap>
+        <SplashGate>
+          <StorageBootstrap>
+            <MarketDataProvider>
+              <SwRegister />
+              {children}
+              <PwaInstallBanner />
+              <BottomNav />
+            </MarketDataProvider>
+          </StorageBootstrap>
+        </SplashGate>
       </body>
     </html>
   );
