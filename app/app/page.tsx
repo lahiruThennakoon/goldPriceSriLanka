@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
-import { BrandLogo } from "@/components/brand-logo";
-import { HomeHero, HomeHeroSkeleton } from "@/components/home-hero";
+import { HomeHero, HomeHeroBrandOnly, HomeHeroSkeleton } from "@/components/home-hero";
 import { MarketInsightsCard } from "@/components/market-insights-card";
 import { VerificationBanner } from "@/components/verification-banner";
 import { formatLkr, goldValueLkr, lkrPerGramAtPurity, scalePavanPriceToPurity } from "@/lib/gold-math";
@@ -59,12 +58,7 @@ export default function HomePage() {
   if (!response || !response.data) {
     return (
       <main className="mx-auto max-w-md space-y-4 p-4">
-        <div
-          className="flex justify-center rounded-lg px-4 py-5"
-          style={{ background: "linear-gradient(180deg, #0a1528 0%, #0d1a2f 100%)" }}
-        >
-          <BrandLogo width={118} />
-        </div>
+        <HomeHeroBrandOnly />
         <p className="text-sm" style={{ color: "var(--negative)" }}>
           Price unavailable right now. {response?.reason ?? "Please try again shortly."}
         </p>
