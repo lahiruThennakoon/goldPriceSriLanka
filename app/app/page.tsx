@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useMarketData } from "@/lib/use-market-data";
+import { HomeBrandHeader } from "@/components/home-brand-header";
 import { MarketInsightsCard } from "@/components/market-insights-card";
 import { PriceHero } from "@/components/price-hero";
 import { VerificationBanner } from "@/components/verification-banner";
@@ -49,7 +50,8 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-md p-4">
+      <main className="mx-auto max-w-md space-y-4 p-4">
+        <HomeBrandHeader />
         <div className="h-40 animate-pulse rounded-md bg-surface-raised" />
       </main>
     );
@@ -85,6 +87,8 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-md space-y-4 p-4">
+      <HomeBrandHeader />
+
       <PriceHero
         purity={defaultPurity}
         lkrPerPavan={lkrPerPavanDefault}
