@@ -32,6 +32,7 @@ export const viewport: Viewport = {
   themeColor: "#121212",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -40,7 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className="min-h-full pb-16">
+      <body className="min-h-full">
         <StorageBootstrap>
           <MarketDataProvider>
             <SwRegister />

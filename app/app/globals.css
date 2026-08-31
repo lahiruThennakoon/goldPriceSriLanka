@@ -11,6 +11,8 @@
   --negative: #e2685f;
   --verify-amber: #e3a83b;
   --border-hairline: #2a2a2e;
+  --bottom-nav-height: 4.5rem;
+  --install-banner-offset: 10.5rem;
 }
 
 @media (prefers-color-scheme: light) {
@@ -64,10 +66,17 @@ body {
   background: var(--surface-base);
   color: var(--ink-primary);
   font-family: var(--font-sans), system-ui, sans-serif;
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem);
+  scroll-padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 1rem);
 }
 
 html[data-install-banner="visible"] body {
-  padding-bottom: calc(4rem + 9.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    var(--bottom-nav-height) + var(--install-banner-offset) + env(safe-area-inset-bottom, 0px) + 1rem
+  );
+  scroll-padding-bottom: calc(
+    var(--bottom-nav-height) + var(--install-banner-offset) + env(safe-area-inset-bottom, 0px) + 1rem
+  );
 }
 
 .tabular-nums {

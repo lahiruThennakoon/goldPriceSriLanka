@@ -70,7 +70,7 @@ export function PwaInstallBanner() {
   return (
     <aside
       className="fixed right-0 left-0 z-40 mx-auto max-w-md px-3"
-      style={{ bottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+      style={{ bottom: "calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))" }}
       role="dialog"
       aria-labelledby="pwa-install-title"
       aria-describedby="pwa-install-desc"
