@@ -140,14 +140,6 @@ export default function HomePage() {
           </p>
         </Link>
       )}
-
-      <Link
-        href="/calculator"
-        className="mb-1 block min-h-[48px] rounded-md p-4 text-center font-medium"
-        style={{ background: "var(--accent-gold)", color: "var(--surface-base)" }}
-      >
-        Open Calculator
-      </Link>
     </main>
   );
 }
