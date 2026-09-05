@@ -20,10 +20,6 @@ export const metadata: Metadata = {
   title: "Gold Value LK",
   description: "Track the current LKR value of your gold holdings.",
   manifest: "/manifest.json",
-  icons: {
-    icon: [{ url: "/logo.png", sizes: "1024x1024", type: "image/png" }],
-    apple: [{ url: "/logo.png", sizes: "180x180", type: "image/png" }],
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
