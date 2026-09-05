@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MarketHoursNotice } from "@/components/market-hours-notice";
 import { useMarketData } from "@/lib/use-market-data";
 import {
   formatGrams,
@@ -53,6 +54,8 @@ export default function CalculatorPage() {
   return (
     <main className="mx-auto max-w-md space-y-4 p-4">
       <h1 className="text-lg font-semibold">Gold Calculator</h1>
+
+      <MarketHoursNotice />
 
       <div className="rounded-md bg-surface-raised p-4">
         <label className="text-xs" style={{ color: "var(--ink-secondary)" }}>

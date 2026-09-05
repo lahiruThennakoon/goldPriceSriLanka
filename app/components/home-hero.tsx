@@ -1,4 +1,5 @@
 import { BrandLogo } from "@/components/brand-logo";
+import { MarketHoursNotice } from "@/components/market-hours-notice";
 import { formatLkr } from "@/lib/gold-math";
 import { formatFreshness } from "@/lib/use-market-data";
 import type { MarketDataStatus } from "@/lib/market-data/types";
@@ -80,6 +81,8 @@ export function HomeHero({ purity, lkrPerPavan, lkrPerGram, status, fetchedAt }:
         <p className="tabular-nums mt-1.5 text-sm" style={{ color: "var(--ink-secondary)" }}>
           {formatLkr(lkrPerGram)} / gram
         </p>
+
+        <MarketHoursNotice className="mt-3" />
 
         <p
           className="mt-2.5 text-[11px]"
