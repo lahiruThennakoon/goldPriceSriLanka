@@ -140,6 +140,14 @@ export default function HomePage() {
           </p>
         </Link>
       )}
+
+      <Link
+        href="/my-gold"
+        className="block min-h-[48px] rounded-md p-4 text-center font-medium"
+        style={{ background: "var(--accent-gold)", color: "var(--surface-base)" }}
+      >
+        Track your gold
+      </Link>
     </main>
   );
 }
