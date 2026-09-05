@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { MarketInsights, MarketFactor, MarketNewsItem } from "@/lib/market-data/insights-provider";
 
 function directionColor(direction: MarketFactor["direction"]): string {
@@ -78,8 +79,12 @@ function FactorRow({ factor }: { factor: MarketFactor }) {
 }
 
 export function MarketInsightsCard({ insights }: { insights: MarketInsights }) {
+  const [showAllNews, setShowAllNews] = useState(false);
   const highImpactNews = insights.news.filter((n) => n.impact === "high");
   const otherNews = insights.news.filter((n) => n.impact !== "high");
+  const allNews = [...highImpactNews, ...otherNews];
+  const visibleNews = showAllNews ? allNews : allNews.slice(0, 1);
+  const hiddenNewsCount = allNews.length - 1;
 
   return (
     <section className="space-y-4">
@@ -107,13 +112,22 @@ export function MarketInsightsCard({ insights }: { insights: MarketInsights }) {
           </p>
 
           <div className="mt-3 space-y-2">
-            {highImpactNews.map((item) => (
-              <NewsRow key={item.link} item={item} />
-            ))}
-            {otherNews.map((item) => (
+            {visibleNews.map((item) => (
               <NewsRow key={item.link} item={item} />
             ))}
           </div>
+
+          {hiddenNewsCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllNews((open) => !open)}
+              className="mt-2 min-h-[40px] w-full rounded-sm border border-border-hairline px-3 text-sm font-medium"
+              style={{ color: "var(--accent-gold)" }}
+              aria-expanded={showAllNews}
+            >
+              {showAllNews ? "Show less" : `Show ${hiddenNewsCount} more`}
+            </button>
+          )}
 
           <p className="mt-3 text-xs leading-relaxed" style={{ color: "var(--verify-amber)" }}>
             News is sourced from public feeds and ranked by relevance to gold, rates, and the dollar. Headlines

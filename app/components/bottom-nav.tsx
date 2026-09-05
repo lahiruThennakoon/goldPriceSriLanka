@@ -18,22 +18,24 @@ export function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-border-hairline bg-surface-raised/95 backdrop-blur-sm"
-      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      style={{
+        paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))",
+      }}
       aria-label="Primary"
     >
-      <ul className="mx-auto flex max-w-md px-1">
+      <ul className="mx-auto flex max-w-md px-0.5">
         {TABS.map((tab) => {
           const active = pathname === tab.href;
           return (
-            <li key={tab.href} className="flex-1">
+            <li key={tab.href} className="min-w-0 flex-1">
               <Link
                 href={tab.href}
-                className="flex min-h-[56px] flex-col items-center justify-center gap-1 py-1.5 text-[11px] font-medium"
+                className="flex min-h-[var(--bottom-nav-content-height)] flex-col items-center justify-center gap-0.5 px-0.5 py-1 text-[10px] font-medium"
                 style={{ color: active ? "var(--accent-gold)" : "var(--ink-secondary)" }}
                 aria-current={active ? "page" : undefined}
               >
                 <span
-                  className="flex h-8 w-10 items-center justify-center rounded-md transition-colors"
+                  className="flex h-7 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
                   style={{
                     background: active
                       ? "color-mix(in srgb, var(--accent-gold) 16%, transparent)"
@@ -42,7 +44,7 @@ export function BottomNav() {
                 >
                   <NavIcon name={tab.icon} />
                 </span>
-                <span className="leading-none">{tab.label}</span>
+                <span className="max-w-full truncate leading-none">{tab.label}</span>
               </Link>
             </li>
           );

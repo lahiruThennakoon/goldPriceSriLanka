@@ -1,4 +1,4 @@
-const CACHE_NAME = "goldpwa-shell-v5";
+const CACHE_NAME = "goldpwa-shell-v6";
 const SHELL_URLS = ["/", "/manifest.json", "/logo.png"];
 
 self.addEventListener("install", (event) => {
@@ -25,6 +25,19 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.pathname.startsWith("/api/")) return;
   if (event.request.method !== "GET") return;
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return res;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request).then((cached) => {
